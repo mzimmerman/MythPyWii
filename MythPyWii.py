@@ -72,10 +72,11 @@ class MythSocket(asynchat.async_chat):
         message = self.ibuffer.pop()
 	logger.debug("from Myth: " + message)
         if (message[:17] == "Playback Recorded" or message[:12] == "Playback DVD" or message[:14] == "Playback Video"):
-	    #Playback Recorded 7:41 of 33:55 pause 5021 2012
-            wc.lastaction = time.time()
-            os.system("xdotool key shift")
-            logger.debug("Still playing content, reset the time and \'pressed\' shift")
+	    if (message.count("pause") == 0 ): 
+		#Playback Recorded 7:41 of 33:55 pause 5021 2012
+        	wc.lastaction = time.time()
+		logger.debug("Still playing content, reset the time")
+	    # else - content paused, do nothing and let it timeout
         self.ibuffer = []
         
     def collect_incoming_data(self, data):
@@ -207,10 +208,9 @@ def main():
             try:
                 wc = WiiController()
                 wc.rumble()
-                os.environ['DISPLAY'] = ":0.0"
-                os.system("xdotool key shift")
                 logger.info("Forcing on the display and connecting to Myth")
                 ms = MythSocket()
+		ms.cmd(data = "key underscore", log = False)
                 logger.debug("MythSocket has been created")
                 thread.start_new_thread(asyncore.loop,())
             except Exception, errMessage:
